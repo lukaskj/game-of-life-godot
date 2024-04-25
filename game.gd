@@ -7,11 +7,12 @@ var margin_left = 2.0
 
 var cell_size = 25
 
-var tick = 0
-var maxTickTime = 1
-var fpsTick = 0
+var tick: float = 0
+var maxTickTime: float = 1
+var fpsTick: float = 0
 
-var runing = false
+var runing: bool = false
+var showDebug: bool = false
 
 var sliderValue = 0
 
@@ -27,6 +28,7 @@ var nextGridIndex: int = 1
 func _ready():
     sliderValue = %sliderSpeed.value
     maxTickTime = 1 - (sliderValue / 100)
+    $debug.visible = showDebug
     
     setupGrid(cell_size)
 
@@ -48,16 +50,20 @@ func setupGrid(cellSize):
             grid[i].append(0)
             next_tick_grid[i].append(0)
 
-var pressed = false
+var clickPressed = false
 func _input(event: InputEvent) -> void:
-    if !(event is InputEventMouse):
-        return
+    if event is InputEventMouse:
+        handleMouseEvent(event)
+    if event is InputEventKey:
+        handleKeyEvent(event)
+    
 
+func handleMouseEvent(event: InputEventMouse) -> void:
     if (event is InputEventMouseButton):
         if event.pressed:
-            pressed = true
+            clickPressed = true
         if event.is_released():
-            pressed = false
+            clickPressed = false
 
     var pos = event.position
     var x = floor((pos.x - margin_left) / cell_size);
@@ -68,10 +74,15 @@ func _input(event: InputEvent) -> void:
     var grid = grids[gridIndex]
     var next_tick_grid = grids[nextGridIndex]
 
-    if (pressed&&x >= 0&&x < width&&y >= 0&&y < height):
+    if (clickPressed&&x >= 0&&x < width&&y >= 0&&y < height):
         grid[x][y] = 1
         next_tick_grid[x][y] = 1
         queue_redraw()
+
+func handleKeyEvent(event: InputEventKey) -> void:
+    if event.keycode == KEY_SHIFT:
+        showDebug = event.is_pressed()
+        $debug.visible = showDebug
 
 func _process(delta: float) -> void:
     tick += delta
@@ -121,6 +132,7 @@ func applyRule(is_alive: int, alive_neighbors: int) -> int:
             return 0
 
 func showDebugInfo(x, y):
+    if !showDebug: return
     var grid = grids[gridIndex]
     var next_tick_grid = grids[nextGridIndex]
 
@@ -129,7 +141,7 @@ func showDebugInfo(x, y):
     var aliveN = calculateAliveNeigbors(x, y)
     var calculatedNextState = applyRule(current, aliveN)
 
-    var text = "Current: %d - Next: %d -- Neighbors: %d - Calc: %d" % [current, next, aliveN, calculatedNextState]
+    var text = "Cur: %d - Next: %d -- Alive Neighbors: %d - Next State: %d" % [current, next, aliveN, calculatedNextState]
 
     %lblDebug.text = text
 
@@ -158,8 +170,12 @@ func _draw() -> void:
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), colors[grid[x][y]], true)
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), Color.WHITE, false)
 
-func _on_check_box_toggled(toggled_on: bool) -> void:
+func _on_button_toggled(toggled_on: bool) -> void:
     runing = toggled_on
+    if runing:
+        %btnStart.text = "Stop"
+    else:
+        %btnStart.text = "Start"
 
 func _on_button_pressed() -> void:
     var grid = grids[gridIndex]

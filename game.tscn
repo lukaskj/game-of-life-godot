@@ -46,10 +46,13 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Set"
 
-[node name="chbxRunning" type="CheckBox" parent="Control/HBoxContainer"]
+[node name="btnStart" type="Button" parent="Control/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Running"
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+toggle_mode = true
+text = "Start"
 
 [node name="btnClear" type="Button" parent="Control/HBoxContainer"]
 layout_mode = 2
@@ -70,7 +73,7 @@ layout_mode = 2
 value = 90.0
 
 [node name="debug" type="Node2D" parent="."]
-position = Vector2(658, 0)
+position = Vector2(619, 0)
 
 [node name="lblDebug" type="Label" parent="debug"]
 unique_name_in_owner = true
@@ -78,17 +81,18 @@ offset_top = 3.0
 offset_right = 301.0
 offset_bottom = 26.0
 text = "DEBUG"
+metadata/_edit_lock_ = true
 
 [node name="btnNextStep" type="Button" parent="debug"]
 unique_name_in_owner = true
-offset_left = 360.0
-offset_right = 425.0
+offset_left = 403.0
+offset_right = 468.0
 offset_bottom = 31.0
 text = "+1 Step
 "
 
 [connection signal="pressed" from="Control/HBoxContainer/btnSet" to="." method="_on_btn_set_pressed"]
-[connection signal="toggled" from="Control/HBoxContainer/chbxRunning" to="." method="_on_check_box_toggled"]
+[connection signal="toggled" from="Control/HBoxContainer/btnStart" to="." method="_on_button_toggled"]
 [connection signal="pressed" from="Control/HBoxContainer/btnClear" to="." method="_on_button_pressed"]
 [connection signal="value_changed" from="Control/HBoxContainer/VBoxContainer/sliderSpeed" to="." method="_on_slider_speed_value_changed"]
 [connection signal="pressed" from="debug/btnNextStep" to="." method="_on_btn_next_step_pressed"]
