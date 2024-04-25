@@ -1,6 +1,5 @@
 extends Node2D
 
-
 var grid: Array = []
 var next_tick_grid: Array = []
 
@@ -12,14 +11,27 @@ var margin_left = 2.0
 var cell_size = 25
 
 var tick = 0
+var maxTickTime = 1
 var fpsTick = 0
 
 var runing = false
 
+var sliderValue = 0
+
 func _ready():
+    sliderValue = %sliderSpeed.value
+    maxTickTime = 1 - (sliderValue / 100)
+    
+    setupGrid(cell_size)
+
+func setupGrid(cellSize):
+    if runing:
+        return
     var size = get_viewport_rect()
-    width = ceil((size.size.x - margin_left) / cell_size)
-    height = ceil((size.size.y - margin_top) / cell_size)
+    width = ceil((size.size.x - margin_left) / cellSize)
+    height = ceil((size.size.y - margin_top) / cellSize)
+    grid = []
+    next_tick_grid = []
     for i in width:
         grid.append([])
         next_tick_grid.append([])
@@ -39,23 +51,22 @@ func _input(event: InputEvent) -> void:
             pressed = false
 
     var pos = event.position
-    var x = floor((pos.x - margin_left)/ cell_size);
+    var x = floor((pos.x - margin_left) / cell_size);
     var y = floor((pos.y - margin_top) / cell_size);
-    if pressed && x >= 0 && x < width && y >= 0 && y < height:
+    if pressed&&x >= 0&&x < width&&y >= 0&&y < height:
         grid[x][y] = 1
         next_tick_grid[x][y] = 1
         queue_redraw()
-        
 
 func _process(delta: float) -> void:
-    # queue_redraw()
-    fpsTick += delta
     tick += delta
-    if (tick >= 0.05):
+    
+    if (tick >= maxTickTime):
         calculateGrid()
         queue_redraw()
         tick = 0
     
+    fpsTick += delta
     if fpsTick >= 1:
         $lblFps.text = str(Engine.get_frames_per_second())
 
@@ -66,10 +77,10 @@ func calculateGrid():
             grid[x][y] = next_tick_grid[x][y]
             var alive_nighbors = 0
 
-            var minX = x-1 if x > 0 else x;
-            var minY = y-1 if y > 0 else y;
-            var maxX = x+1 if x < width-1 else x;
-            var maxY = y+1 if y < height-1 else y;
+            var minX = x - 1 if x > 0 else x;
+            var minY = y - 1 if y > 0 else y;
+            var maxX = x + 1 if x < width - 1 else x;
+            var maxY = y + 1 if y < height - 1 else y;
             for nx in range(minX, maxX + 1):
                 for ny in range(minY, maxY + 1):
                     alive_nighbors += grid[nx][ny]
@@ -95,10 +106,8 @@ func applyRule(is_alive: int, alive_neighbors: int) -> int:
             return 1
     return is_alive
 
-
-
 var colors = [Color.BLACK, Color.WHITE]
-var default_font : Font = ThemeDB.fallback_font;
+var default_font: Font = ThemeDB.fallback_font;
 func _draw() -> void:
     for x in len(grid):
         for y in len(grid[x]):
@@ -106,14 +115,23 @@ func _draw() -> void:
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), colors[grid[x][y]], true)
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), Color.WHITE, false)
 
-
-
-func _on_check_box_toggled(toggled_on:bool) -> void:
+func _on_check_box_toggled(toggled_on: bool) -> void:
     runing = toggled_on
-
 
 func _on_button_pressed() -> void:
     for x in len(grid):
         for y in len(grid[x]):
             grid[x][y] = 0
             next_tick_grid[x][y] = 0
+
+func _on_slider_speed_value_changed(value: float) -> void:
+    sliderValue = value
+    maxTickTime = 1 - (sliderValue / 100)
+
+func _on_btn_set_pressed() -> void:
+    var size = int(%txtCellSize.text)
+    if size <= 3:
+        size = 25
+        %txtCellSize.text = "25"
+    cell_size = size
+    setupGrid(size)
