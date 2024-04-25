@@ -10,6 +10,7 @@ unique_name_in_owner = true
 offset_left = 1072.0
 offset_right = 1146.0
 offset_bottom = 23.0
+text = "fps"
 horizontal_alignment = 2
 
 [node name="Control" type="Control" parent="."]
@@ -68,7 +69,26 @@ unique_name_in_owner = true
 layout_mode = 2
 value = 90.0
 
+[node name="debug" type="Node2D" parent="."]
+position = Vector2(658, 0)
+
+[node name="lblDebug" type="Label" parent="debug"]
+unique_name_in_owner = true
+offset_top = 3.0
+offset_right = 301.0
+offset_bottom = 26.0
+text = "DEBUG"
+
+[node name="btnNextStep" type="Button" parent="debug"]
+unique_name_in_owner = true
+offset_left = 360.0
+offset_right = 425.0
+offset_bottom = 31.0
+text = "+1 Step
+"
+
 [connection signal="pressed" from="Control/HBoxContainer/btnSet" to="." method="_on_btn_set_pressed"]
 [connection signal="toggled" from="Control/HBoxContainer/chbxRunning" to="." method="_on_check_box_toggled"]
 [connection signal="pressed" from="Control/HBoxContainer/btnClear" to="." method="_on_button_pressed"]
 [connection signal="value_changed" from="Control/HBoxContainer/VBoxContainer/sliderSpeed" to="." method="_on_slider_speed_value_changed"]
+[connection signal="pressed" from="debug/btnNextStep" to="." method="_on_btn_next_step_pressed"]

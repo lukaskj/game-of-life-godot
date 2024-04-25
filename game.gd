@@ -1,8 +1,5 @@
 extends Node2D
 
-var grid: Array = []
-var next_tick_grid: Array = []
-
 var width = 30
 var height = 20
 var margin_top = 35.0
@@ -18,6 +15,15 @@ var runing = false
 
 var sliderValue = 0
 
+var grids = [
+    [],
+    []
+]
+
+var gridCount: int = 0
+var gridIndex: int = 0
+var nextGridIndex: int = 1
+
 func _ready():
     sliderValue = %sliderSpeed.value
     maxTickTime = 1 - (sliderValue / 100)
@@ -30,8 +36,11 @@ func setupGrid(cellSize):
     var size = get_viewport_rect()
     width = ceil((size.size.x - margin_left) / cellSize)
     height = ceil((size.size.y - margin_top) / cellSize)
-    grid = []
-    next_tick_grid = []
+
+    grids[gridIndex] = []
+    grids[nextGridIndex] = []
+    var grid = grids[gridIndex]
+    var next_tick_grid = grids[nextGridIndex]
     for i in width:
         grid.append([])
         next_tick_grid.append([])
@@ -53,7 +62,13 @@ func _input(event: InputEvent) -> void:
     var pos = event.position
     var x = floor((pos.x - margin_left) / cell_size);
     var y = floor((pos.y - margin_top) / cell_size);
-    if pressed&&x >= 0&&x < width&&y >= 0&&y < height:
+
+    showDebugInfo(x, y)
+
+    var grid = grids[gridIndex]
+    var next_tick_grid = grids[nextGridIndex]
+
+    if (pressed&&x >= 0&&x < width&&y >= 0&&y < height):
         grid[x][y] = 1
         next_tick_grid[x][y] = 1
         queue_redraw()
@@ -70,23 +85,21 @@ func _process(delta: float) -> void:
     if fpsTick >= 1:
         $lblFps.text = str(Engine.get_frames_per_second())
 
-func calculateGrid():
-    if !runing: return
-    for x in len(grid):
-        for y in len(grid[x]):
-            grid[x][y] = next_tick_grid[x][y]
-            var alive_nighbors = 0
-
-            var minX = x - 1 if x > 0 else x;
-            var minY = y - 1 if y > 0 else y;
-            var maxX = x + 1 if x < width - 1 else x;
-            var maxY = y + 1 if y < height - 1 else y;
-            for nx in range(minX, maxX + 1):
-                for ny in range(minY, maxY + 1):
-                    alive_nighbors += grid[nx][ny]
-            alive_nighbors -= grid[x][y]
+func calculateGrid(force: bool = false):
+    if !runing && !force: return
+    gridCount += 1
+    gridIndex = gridCount % 2
+    nextGridIndex = (gridCount + 1) % 2
+    
+    var next_tick_grid = grids[nextGridIndex]
+    var grid = grids[gridIndex]
+    
+    for x in width:
+        for y in height:
+            var state = grid[x][y]
+            var alive_nighbors = calculateAliveNeigbors(x, y)
             
-            next_tick_grid[x][y] = applyRule(grid[x][y], alive_nighbors)
+            next_tick_grid[x][y] = applyRule(state, alive_nighbors)
 
 func applyRule(is_alive: int, alive_neighbors: int) -> int:
     # https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
@@ -99,18 +112,48 @@ func applyRule(is_alive: int, alive_neighbors: int) -> int:
         if alive_neighbors < 2:
             return 0
         if alive_neighbors == 2 or alive_neighbors == 3:
-            return 1
+            return is_alive
         return 0
     else:
         if alive_neighbors == 3:
             return 1
-    return is_alive
+        else:
+            return 0
+
+func showDebugInfo(x, y):
+    var grid = grids[gridIndex]
+    var next_tick_grid = grids[nextGridIndex]
+
+    var current = grid[x][y]
+    var next = next_tick_grid[x][y]
+    var aliveN = calculateAliveNeigbors(x, y)
+    var calculatedNextState = applyRule(current, aliveN)
+
+    var text = "Current: %d - Next: %d -- Neighbors: %d - Calc: %d" % [current, next, aliveN, calculatedNextState]
+
+    %lblDebug.text = text
+
+func calculateAliveNeigbors(x: int, y: int) -> int:
+    var grid = grids[gridIndex]
+    var alive_nighbors = 0
+
+    var minX = x - 1 if x > 0 else x;
+    var minY = y - 1 if y > 0 else y;
+    var maxX = x + 1 if x < width - 1 else x;
+    var maxY = y + 1 if y < height - 1 else y;
+    for nx in range(minX, maxX + 1):
+        for ny in range(minY, maxY + 1):
+            alive_nighbors += grid[nx][ny]
+    alive_nighbors -= grid[x][y]
+
+    return alive_nighbors
 
 var colors = [Color.BLACK, Color.WHITE]
 var default_font: Font = ThemeDB.fallback_font;
 func _draw() -> void:
-    for x in len(grid):
-        for y in len(grid[x]):
+    var grid = grids[gridIndex]
+    for x in width:
+        for y in height:
             # prints(x, y, grid[x][y])
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), colors[grid[x][y]], true)
             draw_rect(Rect2((x * cell_size + margin_left), (y * cell_size + margin_top), cell_size, cell_size), Color.WHITE, false)
@@ -119,8 +162,10 @@ func _on_check_box_toggled(toggled_on: bool) -> void:
     runing = toggled_on
 
 func _on_button_pressed() -> void:
-    for x in len(grid):
-        for y in len(grid[x]):
+    var grid = grids[gridIndex]
+    var next_tick_grid = grids[nextGridIndex]
+    for x in width:
+        for y in height:
             grid[x][y] = 0
             next_tick_grid[x][y] = 0
 
@@ -129,9 +174,13 @@ func _on_slider_speed_value_changed(value: float) -> void:
     maxTickTime = 1 - (sliderValue / 100)
 
 func _on_btn_set_pressed() -> void:
-    var size = int(%txtCellSize.text)
+    var size = int( %txtCellSize.text)
     if size <= 3:
         size = 25
         %txtCellSize.text = "25"
     cell_size = size
     setupGrid(size)
+
+
+func _on_btn_next_step_pressed() -> void:
+    calculateGrid(true)
